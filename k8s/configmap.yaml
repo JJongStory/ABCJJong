@@ -1,0 +1,13 @@
+# 비밀 아님. Gemini 키 자체는 여기 두지 않고 Secrets Manager ID만 둔다.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chat-api-config
+  namespace: hermes
+data:
+  CONTENT_API_URL: "${CONTENT_API_URL}"
+  NOTE_API_URL: "${NOTE_API_URL}"
+  LLM_PROVIDER: "${LLM_PROVIDER}"
+  BEDROCK_MODEL_ID: "${BEDROCK_MODEL_ID}"
+  GEMINI_SECRET_ID: "hermes/prd/chat/gemini-api-key"
+  AWS_REGION: "ap-northeast-2"
