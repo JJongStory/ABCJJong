@@ -1,0 +1,16 @@
+[Unit]
+Description=HERMES content-api (FastAPI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/content-api
+# 비밀 아님(DB_HOST 등)만 담긴 env 파일. 비밀번호는 앱이 Secrets Manager 에서 조회
+EnvironmentFile=/etc/content-api.env
+ExecStart=/opt/content-api/venv/bin/uvicorn app:app --host 0.0.0.0 --port 8080
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
