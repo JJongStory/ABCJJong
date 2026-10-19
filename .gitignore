@@ -1,0 +1,27 @@
+# secrets / local env
+.env
+.env.*
+*.pem
+*.key
+credentials*
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!example.tfvars
+crash.log
+.terraform.lock.hcl.bak
+# build
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+*.zip
+dist/
+build/
+# os/editor
+.DS_Store
+.idea/
+.vscode/
