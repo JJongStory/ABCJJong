@@ -1,0 +1,37 @@
+#!/bin/bash
+# content-api 부트스트랩 (AL2023). templatefile 변수: DB_HOST DB_NAME DB_SECRET_ARN ARTIFACT_URI APP_VERSION AWS_REGION
+# 쉘 변수는 $VAR (중괄호 없음) 또는 $${VAR} 로만 사용 (Terraform 보간과 충돌 방지)
+set -euo pipefail
+exec > >(tee -a /var/log/content-userdata.log) 2>&1
+echo "[userdata] start $(date -u +%FT%TZ) version=${APP_VERSION}"
+
+APP_DIR=/opt/content-api
+TMP_ZIP=/tmp/content-api.zip
+
+dnf install -y python3-pip unzip
+
+# 재실행 안전: 코드 디렉터리는 덮어쓰기, venv 는 있으면 재사용
+mkdir -p $APP_DIR
+aws s3 cp "${ARTIFACT_URI}" $TMP_ZIP --region "${AWS_REGION}"
+unzip -o $TMP_ZIP -d $APP_DIR
+rm -f $TMP_ZIP
+
+[ -d $APP_DIR/venv ] || python3 -m venv $APP_DIR/venv
+$APP_DIR/venv/bin/pip install --upgrade pip
+$APP_DIR/venv/bin/pip install -r $APP_DIR/requirements.txt
+
+# 비밀 아님만 기록. DB 비밀번호는 앱이 DB_SECRET_ARN 으로 직접 조회
+cat > /etc/content-api.env <<ENVEOF
+DB_HOST=${DB_HOST}
+DB_NAME=${DB_NAME}
+DB_SECRET_ARN=${DB_SECRET_ARN}
+APP_VERSION=${APP_VERSION}
+AWS_REGION=${AWS_REGION}
+ENVEOF
+chmod 640 /etc/content-api.env
+
+install -m 644 $APP_DIR/content-api.service /etc/systemd/system/content-api.service
+systemctl daemon-reload
+systemctl enable content-api.service
+systemctl restart content-api.service   # 재실행 시 새 코드 반영
+echo "[userdata] done $(date -u +%FT%TZ)"
