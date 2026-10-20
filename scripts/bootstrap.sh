@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Project HERMES — AWS CloudShell bootstrap (멱등: 세션마다 다시 실행해도 안전)
 # 사용: source ~/hermes/scripts/bootstrap.sh   (source 해야 환경변수가 현재 셸에 남음)
-set -uo pipefail
+# source 로 실행되므로 set -u/pipefail 을 걸지 않는다: 현재 대화형 셸에 남아 탭 완성·미설정 변수 참조가 깨짐 (T6)
 
 export AWS_REGION=ap-northeast-2 AWS_DEFAULT_REGION=ap-northeast-2
 BIN="$HOME/bin"; mkdir -p "$BIN"

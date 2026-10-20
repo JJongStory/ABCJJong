@@ -1,0 +1,8 @@
+# 로컬 전용: Lambda 대신 note_local.py 어댑터 + 실제 handler.py 를 실행
+FROM python:3.12-slim
+WORKDIR /app
+RUN pip install --no-cache-dir boto3==1.35.99
+COPY --from=handler handler.py /app/handler.py
+COPY note_local.py /app/note_local.py
+EXPOSE 9000
+CMD ["python", "/app/note_local.py"]

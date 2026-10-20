@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-api
+  namespace: hermes
+  labels:
+    app: chat-api
+spec:
+  # HPA가 있으면 HPA가 replicas를 관리. 기본 2 = 2 AZ에 1개씩
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chat-api
+  template:
+    metadata:
+      labels:
+        app: chat-api
+    spec:
+      serviceAccountName: chat-api
+      # AZ 분산: 한 AZ 장애에도 서비스 유지. ScheduleAnyway = 노드 부족/로컬(k3d, zone 라벨 없음)에서도 기동
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: chat-api
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: chat-api
+          image: "${IMAGE}"   # git short SHA 태그 (latest 금지)
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: chat-api-config
+          env:
+            - name: APP_VERSION
+              value: "${APP_VERSION}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi   # CPU limit 미설정: throttling 방지, HPA는 requests 기준
+          # /health 는 외부 의존성을 보지 않는다 → LLM/content 장애로 Pod가 죽지 않음
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

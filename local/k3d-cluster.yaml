@@ -1,0 +1,19 @@
+# C9 리허설용 로컬 K8s: server 1 + agent 2 (Pod 2개가 노드에 분산되는지 확인)
+# 사용: k3d cluster create --config local/k3d-cluster.yaml
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: hermes
+servers: 1
+agents: 2
+options:
+  k3s:
+    nodeLabels:
+      # EKS 의 zone topologySpread 를 로컬에서도 시험하기 위한 가짜 zone 라벨
+      - label: topology.kubernetes.io/zone=local-a
+        nodeFilters: [agent:0]
+      - label: topology.kubernetes.io/zone=local-c
+        nodeFilters: [agent:1]
+    extraArgs:
+      - arg: --disable=traefik   # Ingress(ALB 전용)는 로컬에 적용하지 않음
+        nodeFilters: [server:*]
