@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS scenarios (
 | 런타임 | Amazon Linux 2023, Python 3 + FastAPI + uvicorn, systemd `content-api.service`, **포트 8080** |
 | 기동 | Launch Template `hermes-prd-content-lt` + **User Data** (사람 접속 금지) |
 | 코드 배포 | `s3://hermes-prd-shared-artifacts-<random6>/content/content-api-<ver>.zip` → User Data가 내려받아 실행 |
-| ASG | `hermes-prd-content-asg` min 1 / desired 1 / max 2, app-a·app-c, health check = ELB, grace 120s |
+| ASG | `hermes-prd-content-asg` min 1 / desired 1 / max 2, app-a·app-c, health check = ELB, grace 300s |
 | 외부 ALB | `hermes-prd-content-alb-ext` (pub 서브넷) → TG `hermes-prd-content-tg-ext` |
 | 내부 ALB | `hermes-prd-content-alb-int` (app 서브넷, internal) → TG `hermes-prd-content-tg-int` |
 | 인스턴스 역할 | `hermes-prd-content-ec2-role` : `AmazonSSMManagedInstanceCore`, `secretsmanager:GetSecretValue`(RDS 시크릿 ARN 한정), `s3:GetObject`(artifacts/content/*) |
@@ -136,7 +136,8 @@ API:
 | 함수 | `hermes-prd-note-fn`, Python 3.12, 128MB, timeout 10s, **VPC 연결(app-a, app-c, `note-lambda-sg`)** |
 | 실행 역할 | `hermes-prd-note-fn-role`: `AWSLambdaVPCAccessExecutionRole` + `dynamodb:PutItem`,`dynamodb:Query`(테이블 ARN 한정) |
 | 환경변수 | `TABLE_NAME=hermes-prd-note-ddb` |
-| 동시성 | reserved concurrency 2 (증설 실험: 2 → 4) |
+| 동시성 | reserved concurrency 2 (tfvars note_reserved_concurrency). 계정 동시성 한도가 10이면 예약이 거부되므로 null |
+| 증설 실험(용량 2배) | 예약 가능: reserved 2→4 / 예약 불가: 메모리 128→256MB (CPU 비례 증가) |
 
 API:
 | Method | Path | 요청 / 응답 |
@@ -192,5 +193,6 @@ ABCJJong/  (CloudShell에선 ~/hermes 로 clone)
 ## 12. 변경 이력
 | 날짜 | 변경 | 사유 |
 |---|---|---|
+| 2026-10-20 | ① 노드그룹이 cluster SG를 그대로 사용 → 내부 ALB 소스는 cluster SG 1개로 충분 ② Bedrock IRSA 리소스 확정 ③ DDB 리소스 정책 유지, 증적은 API로 ④ ASG grace 300s ⑤ Lambda 예약 동시성은 계정 한도 확인 후 결정 | T6 리뷰 + 기획 결정 |
 | 2026-10-14 | 초안 | 수행계획서 기반 |
 | 2026-10-19 | 메인 저장소 확정: github.com/JJongStory/ABCJJong (public). 문서는 docs/project/, AI 로그는 docs/ai-log.md | 저장소 생성 |
