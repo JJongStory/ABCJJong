@@ -118,6 +118,8 @@ module "chat" {
   bedrock_model_id      = var.bedrock_model_id
   enable_github_ci_role = var.enable_github_ci_role
   github_repo           = var.github_repo
+
+  github_oidc_provider_arn = var.github_oidc_provider_arn
 }
 
 module "content" {

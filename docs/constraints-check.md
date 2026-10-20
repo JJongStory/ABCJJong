@@ -11,7 +11,7 @@
 | C5 | 영속 저장소 2종 | ☐ | RDS MySQL(관계형) + DynamoDB(NoSQL) | `c5-rds.png`, `c5-ddb-items.png` |
 | C6 | 데이터 계층 비노출 | ☐ | RDS: private data 서브넷, publicly_accessible=false, SG는 A의 SG만. DynamoDB: IAM 최소권한 + Gateway Endpoint (+테이블 정책 aws:SourceVpce 제한) | `c6-rds-sg.png`, `c6-rds-public-false.png`, `c6-ddb-policy.png` |
 | C7 | 크리덴셜 외부화 | ☐ | RDS 관리형 시크릿(Secrets Manager), IAM Role(Instance Profile/IRSA/Lambda Role). Access Key 미발급 | `c7-rds-secret.png`, `c7-iam-roles.png`, `c7-git-grep.txt` |
-| C8 | 자원 식별자 기반 접근 제어 | ☐ | SG 소스는 **SG ID만** (외부 ALB 80/443만 0.0.0.0/0 예외), IAM 정책 리소스 ARN 한정 | `c8-sg-rules.png`, `c8-iam-policy.png` |
+| C8 | 자원 식별자 기반 접근 제어 | ☐ | SG 소스는 **SG ID만** (외부 ALB 80만 0.0.0.0/0 예외 — 01_CONTRACT 3장. Ingress ALB SG도 LB Controller가 80만 개방), IAM 정책 리소스 ARN 한정 | `c8-sg-rules.png`, `c8-iam-policy.png` |
 | C9 | 자동 복구 실증 | ☐ | EC2 terminate → ASG 재생성 / Pod delete → ReplicaSet 복원 (전·후 캡처) | `c9-vm-before.png`, `c9-vm-after.png`, `c9-pod-before.png`, `c9-pod-after.png` |
 | C10 | 환경 및 완주 | ☐ | ap-northeast-2·지정 계정만, 마감 시 E2E 동작 | `c10-e2e.png`, `c10-region.png` |
 

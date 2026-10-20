@@ -49,6 +49,12 @@ variable "github_repo" {
   default     = "JJongStory/ABCJJong"
 }
 
+variable "github_oidc_provider_arn" {
+  description = "계정에 GitHub OIDC provider(token.actions.githubusercontent.com)가 이미 있으면 그 ARN. 비우면 새로 생성 (계정당 1개만 허용)"
+  type        = string
+  default     = ""
+}
+
 variable "enable_github_ci_role" {
   description = "hermes-prd-shared-gha-role 생성 여부 (계약서 9장 '선택')"
   type        = bool

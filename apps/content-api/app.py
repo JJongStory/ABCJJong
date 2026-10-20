@@ -172,8 +172,9 @@ def _startup() -> None:
 
 
 def _fail(e: DBUnavailable) -> HTTPException:
+    # 원인(호스트명·예외 메시지)은 로그에만. 외부 ALB 로 공개되는 응답에는 일반 문구만 (T6)
     log.error("db unavailable: %s", e)
-    return HTTPException(status_code=503, detail="database unavailable: %s" % e)
+    return HTTPException(status_code=503, detail="database unavailable")
 
 
 @app.get("/health")

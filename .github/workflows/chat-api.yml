@@ -22,6 +22,8 @@ concurrency:
 
 jobs:
   build-and-deploy:
+    # [T6] Variables 미등록(AWS 계정 수령 전)이면 job 을 건너뛴다 → PR 머지만으로 main 이 red 가 되지 않게
+    if: ${{ vars.AWS_ROLE_ARN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

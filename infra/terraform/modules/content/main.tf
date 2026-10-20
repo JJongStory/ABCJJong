@@ -241,6 +241,12 @@ resource "aws_launch_template" "this" {
 
   # zip must exist in S3 before instances boot
   depends_on = [aws_s3_object.app]
+
+  lifecycle {
+    # [T6] AMI 는 최초 생성 시점 값으로 고정. 새 AL2023 AMI 가 나와도 apply 가 instance refresh 를
+    # 일으키지 않게 한다 → 재배포(②) 측정은 app_version 변경만 반영. AMI 갱신은 이 줄을 빼고 apply.
+    ignore_changes = [image_id]
+  }
 }
 
 resource "aws_autoscaling_group" "this" {

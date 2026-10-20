@@ -18,3 +18,5 @@ note_reserved_concurrency = 2 # 계정 동시성 한도가 낮으면 거부됨 �
 
 github_repo           = "JJongStory/ABCJJong"
 enable_github_ci_role = true
+# 계정에 GitHub OIDC provider 가 이미 있으면(aws iam list-open-id-connect-providers) 그 ARN 을 넣는다
+github_oidc_provider_arn = ""
