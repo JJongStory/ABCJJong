@@ -52,7 +52,7 @@ services:
         handler: ../apps/note-fn
     environment:
       DDB_ENDPOINT: http://dynamodb-local:8000
-      TABLE_NAME: hermes-prd-note-ddb
+      TABLE_NAME: user17-hermes-note-ddb
       AWS_REGION: ap-northeast-2
       # dynamodb-local 용 더미 값. 호스트의 실제 AWS 자격증명이 컨테이너로 새지 않도록 ${} 보간을 쓰지 않는다
       AWS_ACCESS_KEY_ID: fakeLocalKeyId

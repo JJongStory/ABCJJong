@@ -25,7 +25,7 @@ provider "aws" {
   default_tags {
     tags = {
       Project   = "HERMES"
-      Owner     = "parkjongho"
+      Owner     = "user17"
       Env       = "prd"
       ManagedBy = "terraform"
     }

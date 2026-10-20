@@ -1,4 +1,4 @@
-"""hermes-prd-note-fn: API Gateway HTTP API(payload v2) -> DynamoDB 메모 저장/조회."""
+"""user17-hermes-note-fn: API Gateway HTTP API(payload v2) -> DynamoDB 메모 저장/조회."""
 import base64
 import json
 import logging
@@ -13,8 +13,8 @@ from botocore.exceptions import BotoCoreError, ClientError
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-DEFAULT_FUNCTION_NAME = "hermes-prd-note-fn"
-TABLE_NAME = os.environ.get("TABLE_NAME", "hermes-prd-note-ddb")
+DEFAULT_FUNCTION_NAME = "user17-hermes-note-fn"
+TABLE_NAME = os.environ.get("TABLE_NAME", "user17-hermes-note-ddb")
 MAX_FIELD = {"user_id": 64, "wrong": 1000, "correct": 1000, "memo": 2000}
 
 # 콜드스타트 플래그: 새 실행 환경의 첫 호출만 True (복구 실험 증거용)

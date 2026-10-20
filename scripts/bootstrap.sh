@@ -31,8 +31,8 @@ echo "== \$HOME usage"; du -sh "$HOME" 2>/dev/null
 echo "== docker"; if docker info >/dev/null 2>&1; then echo "docker OK"; else echo "docker 사용 불가 → GitHub Actions 빌드 경로 사용"; fi
 
 # EKS가 이미 있으면 kubeconfig 연결
-if aws eks describe-cluster --name hermes-prd-chat-eks >/dev/null 2>&1; then
-  aws eks update-kubeconfig --name hermes-prd-chat-eks --alias hermes >/dev/null && echo "kubeconfig: hermes"
+if aws eks describe-cluster --name user17-hermes-chat-eks >/dev/null 2>&1; then
+  aws eks update-kubeconfig --name user17-hermes-chat-eks --alias hermes >/dev/null && echo "kubeconfig: hermes"
 fi
 
 # 셸 편의

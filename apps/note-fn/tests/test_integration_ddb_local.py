@@ -12,7 +12,7 @@ pytestmark = pytest.mark.skipif(not ENDPOINT, reason="DDB_ENDPOINT not set")
 
 
 class Ctx:
-    function_name = "hermes-prd-note-fn"
+    function_name = "user17-hermes-note-fn"
     aws_request_id = "int-1"
 
 

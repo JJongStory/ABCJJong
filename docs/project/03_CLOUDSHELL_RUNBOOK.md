@@ -47,7 +47,7 @@ source ~/hermes/scripts/bootstrap.sh && cd ~/hermes/infra/terraform && terraform
 # Container: LB Controller (helm_release로 안 했다면)
 helm repo add eks https://aws.github.io/eks-charts && helm repo update
 helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system \
-  --set clusterName=hermes-prd-chat-eks --set serviceAccount.create=true \
+  --set clusterName=user17-hermes-chat-eks --set serviceAccount.create=true \
   --set serviceAccount.name=aws-load-balancer-controller \
   --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=$(terraform output -raw albc_role_arn) \
   --set region=ap-northeast-2 --set vpcId=$(terraform output -raw vpc_id)
@@ -83,9 +83,9 @@ terraform apply -target=module.monitoring -auto-approve   # 메일 구독 확인
 | 작업 \ 환경 | VM (EC2 ASG) | Container (EKS) | Serverless (Lambda) |
 |---|---|---|---|
 | ① 최초 배포 | `terraform apply -target=module.content` → ALB 200까지 | `kubectl apply` → rollout status → Ingress 200까지 | `terraform apply -target=module.note` → 첫 201까지 |
-| ② 재배포 (코드 1줄 수정) | `APP_VERSION` 변경 → apply(zip 업로드·LT 새 버전) → (ASG `instance_refresh` 블록이 apply 중 refresh 를 **자동 시작** — 수동 `aws autoscaling start-instance-refresh ...` 는 이미 진행 중이면 오류이므로 생략 가능, T6) → 새 version 응답까지. 무중단 여부 `wait_http` 루프로 관찰 | 이미지 새 태그 → `kubectl -n hermes set image deploy/chat-api chat-api=$ECR:<sha>` → rollout status. 롤링 무중단 | `aws lambda update-function-code --function-name hermes-prd-note-fn --zip-file fileb://note.zip && aws lambda wait function-updated --function-name hermes-prd-note-fn` |
+| ② 재배포 (코드 1줄 수정) | `APP_VERSION` 변경 → apply(zip 업로드·LT 새 버전) → (ASG `instance_refresh` 블록이 apply 중 refresh 를 **자동 시작** — 수동 `aws autoscaling start-instance-refresh ...` 는 이미 진행 중이면 오류이므로 생략 가능, T6) → 새 version 응답까지. 무중단 여부 `wait_http` 루프로 관찰 | 이미지 새 태그 → `kubectl -n hermes set image deploy/chat-api chat-api=$ECR:<sha>` → rollout status. 롤링 무중단 | `aws lambda update-function-code --function-name user17-hermes-note-fn --zip-file fileb://note.zip && aws lambda wait function-updated --function-name user17-hermes-note-fn` |
 | ③ 강제 종료 복구 (C9) | `aws ec2 terminate-instances --instance-ids <id>` → ASG 재생성 → ALB 200까지 (단일 인스턴스라 다운타임 발생 — 기록) | `kubectl -n hermes delete pod <pod>` → 새 Pod Ready까지 (`kubectl get pods -w`). 다른 replica가 응답 유지 | `POST /notes?crash=1`(실행환경 종료, 502) → 즉시 재요청 201 (CloudWatch 로그 INIT로 새 환경 증명) |
-| ④ 용량 2배 | `aws autoscaling set-desired-capacity --auto-scaling-group-name hermes-prd-content-asg --desired-capacity 2` → TG healthy 2개까지 | HPA 있으면 `kubectl -n hermes patch hpa chat-api -p '{"spec":{"minReplicas":4}}'` (없으면 `kubectl scale --replicas=4`) → Ready 4까지 | `aws lambda put-function-concurrency --function-name hermes-prd-note-fn --reserved-concurrent-executions 4` (즉시) |
+| ④ 용량 2배 | `aws autoscaling set-desired-capacity --auto-scaling-group-name user17-hermes-content-asg --desired-capacity 2` → TG healthy 2개까지 | HPA 있으면 `kubectl -n hermes patch hpa chat-api -p '{"spec":{"minReplicas":4}}'` (없으면 `kubectl scale --replicas=4`) → Ready 4까지 | `aws lambda put-function-concurrency --function-name user17-hermes-note-fn --reserved-concurrent-executions 4` (즉시) |
 
 측정 팁: 시간은 "명령 입력 ~ 외부 URL이 새 상태로 응답"까지로 **정의를 통일**하고 발표 11장에 그 정의를 적는다.
 

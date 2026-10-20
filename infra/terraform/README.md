@@ -32,6 +32,6 @@ LB Controller 는 Terraform 밖(runbook 의 helm 명령)에서 설치한다 — 
 
 ## 설계 메모
 - `-target=module.data` 가 EKS 를 끌어오지 않도록 RDS 인바운드 규칙(3306 ← content-ec2-sg)은 **content 모듈**에서 만든다.
-- CI(`hermes-prd-shared-gha-role`)는 chat 모듈이 만든다. 출력 `gha_role_arn` 값을 GitHub Repository Variable `AWS_ROLE_ARN` 에 등록 (계정 ID 포함 → 캡처 금지).
+- CI(`user17-hermes-shared-gha-role`)는 chat 모듈이 만든다. 출력 `gha_role_arn` 값을 GitHub Repository Variable `AWS_ROLE_ARN` 에 등록 (계정 ID 포함 → 캡처 금지).
 - 정리: Ingress 먼저 삭제(`kubectl -n hermes delete ingress chat-api`) 후 `terraform destroy` (runbook 5장).
 - 보안 스캔 결과·수용 사유: `SECURITY_SCAN.md`
