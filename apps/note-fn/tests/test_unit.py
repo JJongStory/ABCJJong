@@ -8,7 +8,7 @@ import handler
 
 
 class Ctx:
-    function_name = "hermes-prd-note-fn"
+    function_name = "user17-hermes-note-fn"
     aws_request_id = "req-1"
 
 
@@ -52,7 +52,7 @@ GOOD = {"user_id": "u1", "wrong": "go", "correct": "went"}
 
 def test_post_ok(ddb):
     s, b = call(ev("POST", "/notes", GOOD))
-    assert s == 201 and b["function"] == "hermes-prd-note-fn" and b["request_id"] == "req-1"
+    assert s == 201 and b["function"] == "user17-hermes-note-fn" and b["request_id"] == "req-1"
     assert b["saved"]["created_at"].endswith("+00:00") and "." in b["saved"]["created_at"]
     assert ddb.puts[0]["Item"]["user_id"] == {"S": "u1"}
 
@@ -131,4 +131,4 @@ def test_cold_start_flag(ddb, caplog):
 
 def test_no_context_defaults(ddb):
     r = handler.lambda_handler(ev("GET", "/notes/u"), types.SimpleNamespace())
-    assert json.loads(r["body"])["function"] == "hermes-prd-note-fn"
+    assert json.loads(r["body"])["function"] == "user17-hermes-note-fn"

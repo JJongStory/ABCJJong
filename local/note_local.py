@@ -18,7 +18,7 @@ from botocore.exceptions import ClientError
 
 sys.path.insert(0, os.environ.get("HANDLER_DIR", "/app"))
 
-TABLE = os.environ.setdefault("TABLE_NAME", "hermes-prd-note-ddb")
+TABLE = os.environ.setdefault("TABLE_NAME", "user17-hermes-note-ddb")
 os.environ.setdefault("AWS_REGION", "ap-northeast-2")
 os.environ.setdefault("AWS_DEFAULT_REGION", os.environ["AWS_REGION"])
 
@@ -52,7 +52,7 @@ def ensure_table():
 
 
 class Context:
-    function_name = "hermes-prd-note-fn"
+    function_name = "user17-hermes-note-fn"
 
     def __init__(self):
         self.aws_request_id = str(uuid.uuid4())

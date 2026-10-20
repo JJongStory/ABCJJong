@@ -11,8 +11,8 @@ usage() {
                (환경변수 SKIP 으로도 지정 가능. 예: k3d 적용 시 --skip ingress,hpa)
   -o OUTDIR    지정 시 파일별로 OUTDIR/ 에 저장, 없으면 stdout 에 '---' 로 이어 출력
 필수 env: IMAGE CHAT_IRSA_ROLE_ARN CONTENT_API_URL
-예) IMAGE=123.dkr.ecr.ap-northeast-2.amazonaws.com/hermes-prd-chat-ecr:ab12cd3 \
-    CHAT_IRSA_ROLE_ARN=arn:aws:iam::123:role/hermes-prd-chat-irsa-role \
+예) IMAGE=123.dkr.ecr.ap-northeast-2.amazonaws.com/user17-hermes-chat-ecr:ab12cd3 \
+    CHAT_IRSA_ROLE_ARN=arn:aws:iam::123:role/user17-hermes-chat-irsa-role \
     CONTENT_API_URL=http://internal-xxx.elb.amazonaws.com scripts/render-k8s.sh | kubectl apply -f -
 USAGE
 }

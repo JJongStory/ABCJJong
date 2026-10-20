@@ -121,7 +121,7 @@ resource "aws_vpc_security_group_ingress_rule" "rds_from_ec2" {
   from_port                    = 3306
   to_port                      = 3306
   referenced_security_group_id = aws_security_group.ec2.id
-  tags                         = merge(local.tags, { Name = "hermes-prd-shared-rds-sg-in-3306-content" })
+  tags                         = merge(local.tags, { Name = "user17-hermes-shared-rds-sg-in-3306-content" })
 }
 
 # ---------------------------------------------------------------- IAM
@@ -256,7 +256,7 @@ resource "aws_autoscaling_group" "this" {
   max_size                  = 2
   vpc_zone_identifier       = var.app_subnet_ids
   health_check_type         = "ELB"
-  health_check_grace_period = 120
+  health_check_grace_period = 300 # t3.micro 에서 user_data dnf+pip 완료까지 걸리는 시간
   target_group_arns         = [aws_lb_target_group.ext.arn, aws_lb_target_group.int.arn]
 
   launch_template {

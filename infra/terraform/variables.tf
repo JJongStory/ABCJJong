@@ -56,7 +56,7 @@ variable "github_oidc_provider_arn" {
 }
 
 variable "enable_github_ci_role" {
-  description = "hermes-prd-shared-gha-role 생성 여부 (계약서 9장 '선택')"
+  description = "user17-hermes-shared-gha-role 생성 여부 (계약서 9장 '선택')"
   type        = bool
   default     = true
 }

@@ -25,6 +25,7 @@
 | 13 | 10/20 | (T6) Global 추론 프로파일은 다른 리전 foundation-model ARN 권한도 필요 | 기각 | 이미 `bedrock:*::foundation-model/...` 로 작성됨(`modules/chat/iam.tf`) |
 | 14 | 10/20 | (T6) ALBC 정책·ECR GetAuthorizationToken 의 `Resource "*"` | 기각(예외 인정) | API 가 리소스 수준 권한 미지원 / upstream 공식 정책. 사유 주석 존재 |
 | 15 | 10/20 | (T6) chat `/note` 프록시가 SigV4 없이 호출 | 기각 | note HTTP API 는 IAM authorizer 미사용(C3 공개 엔드포인트) — 계약 9장 `execute-api:Invoke` 는 선택 |
+| 16 | 10/20 | 실습 계정이 공유 계정(user17)으로 배정 → 이름 충돌·계정 전역 자원(GitHub OIDC) 삭제 위험 | 수용 | 접두사 user17-hermes, CI Role 비활성, CloudShell 빌드 |
 
 ## ③ 구현 단계 — AI 생성 코드의 오류/보안 취약점과 수정 (≥1건)
 | # | 일시 | 파일 | 생성 모델 | 발견한 문제 | 위험 | 수정 내용 | 발견 주체 |
