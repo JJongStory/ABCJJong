@@ -9,6 +9,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY app.py llm.py ./
+COPY static/ ./static/
 
 # 비루트 실행: K8s runAsNonRoot 검증을 위해 숫자 UID 사용
 RUN useradd --system --uid 10001 --no-create-home appuser

@@ -132,3 +132,36 @@ def test_cold_start_flag(ddb, caplog):
 def test_no_context_defaults(ddb):
     r = handler.lambda_handler(ev("GET", "/notes/u"), types.SimpleNamespace())
     assert json.loads(r["body"])["function"] == "user17-hermes-note-fn"
+
+
+CONV = {"user_id": "쫑_17", "topic": "cafe",
+        "turns": [{"role": "assistant", "en": "Hi!"},
+                  {"role": "user", "ko": "커피 주세요", "en": "Coffee, please.", "pron": "커피, 플리즈."}]}
+
+
+def test_conversation_post_ok(ddb):
+    s, b = call(ev("POST", "/conversations", CONV))
+    assert s == 201 and b["saved"]["created_at"].startswith("conv#")
+    assert b["saved"]["title"] == "커피 주세요" and b["saved"]["turn_count"] == "2"
+    stored = json.loads(ddb.puts[0]["Item"]["turns"]["S"])
+    assert stored[1]["pron"] == "커피, 플리즈."
+
+
+@pytest.mark.parametrize("body", [
+    {**CONV, "user_id": "a"}, {**CONV, "user_id": "bad id!"}, {**CONV, "turns": []},
+    {**CONV, "turns": [{"role": "x", "en": "a"}]}, {**CONV, "turns": [{"role": "user"}]},
+    {**CONV, "turns": [{"role": "user", "en": "x" * 1001}]}, {**CONV, "turns": [{"role": "user", "en": "a"}] * 41},
+])
+def test_conversation_validation(ddb, body):
+    s, _ = call(ev("POST", "/conversations", body))
+    assert s == 400 and not ddb.puts
+
+
+def test_conversation_get_and_note_prefix(ddb):
+    ddb.query = lambda **kw: (ddb.queries.append(kw) or {"Items": [
+        {"user_id": {"S": "쫑_17"}, "created_at": {"S": "conv#t"}, "turns": {"S": '[{"role":"user","ko":"a"}]'}}]})
+    s, b = call(ev("GET", "/conversations/쫑_17", params={"user_id": "쫑_17"}))
+    assert s == 200 and b["items"][0]["turns"][0]["ko"] == "a"
+    assert ddb.queries[0]["ExpressionAttributeValues"][":p"] == {"S": "conv#"}
+    call(ev("GET", "/notes/u", params={"user_id": "u"}))
+    assert ddb.queries[1]["ExpressionAttributeValues"][":p"] == {"S": "20"}

@@ -21,6 +21,15 @@ curl -s localhost:8000/scenario | python3 -m json.tool  # chat-api → content-a
 k3d 리허설: `k3d cluster create --config local/k3d-cluster.yaml` 후 `k8s/` 매니페스트 적용(Ingress 제외). 앱별 테스트는 각 `apps/*/tests/`를 `pytest`로 실행한다.
 (위 파일은 다른 Task 산출물이며, 없는 경우 해당 Task 완료 후 사용)
 
+## 학습자 화면 (`/ui`)
+chat-api가 정적 페이지 `apps/chat-api/static/index.html`을 `GET /ui`로 제공한다. Ingress ALB 주소 뒤에 `/ui`를 붙여 접속한다.
+
+- 닉네임 로그인(2~20자, 영문·숫자·한글·`_`·`-`) — 닉네임이 DynamoDB `user_id`가 된다
+- 탭 3개: **시나리오**(VM 콘텐츠 API → RDS) · **대화 기록**(대화 저장/조회) · **오답노트**(Serverless → DynamoDB)
+- 대화 응답에 영어 교정문과 한글 발음(transliteration)을 함께 표시하고, 화면 하단 trace 패널에 각 호출이 거친 실행 환경을 보여준다
+- chat-api가 note API를 대신 호출(`/notes/{user_id}`, `/conversations`, `/note`)하므로 브라우저는 Ingress ALB 하나만 알면 된다
+- DynamoDB SK 규칙: 오답노트 = `created_at`(ISO 시각), 대화 = `conv#<created_at>`
+
 ## 배포 순서 (AWS CloudShell, ap-northeast-2)
 상세 명령은 `docs/project/03_CLOUDSHELL_RUNBOOK.md`. 의존 순서: **network → data → chat(EKS) → content → note → monitoring**
 

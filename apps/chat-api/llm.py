@@ -30,7 +30,14 @@ SYSTEM_PROMPT = (
     '"reply_en" (your short, friendly English reply that continues the conversation), '
     '"reply_pron" (Korean Hangul pronunciation of reply_en), '
     '"reply_ko" (Korean translation of reply_en), '
-    '"topic" (one short lowercase English topic word, e.g. cafe, airport, small-talk).'
+    '"topic" (one short lowercase English topic word, e.g. cafe, airport, small-talk). '
+    "IMPORTANT: input_pron and reply_pron are transliterations - write how the ENGLISH sentence "
+    "sounds using Hangul letters. Never copy the user's original Korean sentence and never write "
+    "the Korean meaning there. "
+    'Example for the user message "커피 한 잔 주세요": '
+    '{"input_en": "One coffee, please.", "input_pron": "원 커피, 플리즈.", '
+    '"reply_en": "Sure! Hot or iced?", "reply_pron": "슈어! 핫 오어 아이스드?", '
+    '"reply_ko": "물론이죠! 따뜻한 걸로 드릴까요, 아이스로 드릴까요?", "topic": "cafe"}'
 )
 
 
