@@ -1,29 +1,35 @@
-# 운영 체험 매트릭스 (3 환경 × 4 작업) — 발표 11장 원천
+# 운영 체험 매트릭스 (3 환경 × 4 작업) — 발표 12·13장 원천
 
-> 측정은 `scripts/ops/measure.sh`로 감싸 `docs/ops-matrix.csv`에 자동 기록된다.
-> 무중단 판단은 `scripts/ops/watch_availability.sh <URL> &`를 작업 동안 백그라운드로 돌려 `docs/availability-*.csv`(200/비200 타임라인)를 근거로 한다.
-> 명령은 `03_CLOUDSHELL_RUNBOOK.md` 3장과 동일. 아래 `<…>` 와 빈칸(`__`)은 실측 후 채운다.
+> 측정은 `scripts/ops/measure.sh`로 감싸 `docs/ops-matrix.csv`(CloudShell 작업 디렉터리)에 자동 기록했다. 원본 기록 캡처는 증적 E17.
+> 무중단 판단은 `scripts/ops/watch_availability.sh <URL> 1 &`를 작업 동안 백그라운드로 돌려 1초 간격 200/비200을 집계했다. 결과 캡처는 증적 E18.
+> 측정일: 2026-10-20 ~ 10-21, 리전 ap-northeast-2. 명령은 `docs/project/03_CLOUDSHELL_RUNBOOK.md` 3장과 동일.
 
-## 측정 정의 (발표 11장에 그대로 기재)
+## 측정 정의
 - **시작**: 운영 명령(또는 `measure.sh`)을 입력한 시각.
-- **종료**: 외부 엔드포인트(외부 ALB / Ingress ALB / API GW URL)가 **새 상태로 200 응답**한 시각. `wait_http.sh`가 걸린 초를 출력한다.
-- 소요시간 = 종료 − 시작(초). 환경별로 같은 정의를 쓴다(내부 상태 "Ready"가 아니라 사용자 관점의 응답 기준).
-- **무중단 여부**: 작업 중 `watch_availability.sh`가 기록한 비200 횟수 / 최장 연속 실패(초). 0 이면 "무중단".
-- 같은 작업은 환경당 1회 이상 측정, 재시도 시 CSV에 행이 추가되므로 대표값을 아래 표에 옮긴다.
+- **종료**: 외부 엔드포인트(외부 ALB / Ingress ALB / API GW URL)가 **새 상태로 응답**한 시각. `wait_http.sh`가 1초 폴링으로 걸린 초를 출력한다.
+- 소요시간 = 종료 − 시작(초). 세 환경 모두 같은 정의(내부 상태 "Ready"가 아니라 사용자 관점의 응답 기준).
+- **무중단 여부**: 작업 중 비200 응답 수 / 전체 요청 수. 0이면 무중단.
+- 이미지 빌드, zip 패키징은 준비 단계로 보고 소요시간에서 제외.
 
-## 3×4 표
+## 3×4 표 (단위: 초)
+
 | 작업 | VM (EC2 ASG) | Container (EKS) | Serverless (Lambda) |
 |---|---|---|---|
-| **① 최초 배포** | **방법** terraform apply → ALB 200까지<br>**명령** `measure.sh vm deploy -- terraform apply -target=module.content -auto-approve` 후 `wait_http.sh "http://$(terraform output -raw content_alb_ext_dns)/" hostname`<br>**소요** __ 초 · **무중단** 해당 없음(최초)<br>**관찰** __ | **방법** kubectl apply → rollout → Ingress 200까지<br>**명령** `measure.sh container deploy -- bash -c "../../scripts/render-k8s.sh \| kubectl apply -f - && kubectl -n hermes rollout status deploy/chat-api"` 후 `wait_http.sh "http://<ingress-dns>/" pod`<br>**소요** __ 초 (클러스터 생성 `deploy-cluster` 별도 __ 초) · **무중단** 해당 없음<br>**관찰** __ | **방법** terraform apply → 첫 201까지<br>**명령** `measure.sh serverless deploy -- terraform apply -target=module.note -auto-approve` 후 `POST $(terraform output -raw note_api_url)/notes`<br>**소요** __ 초 · **무중단** 해당 없음<br>**관찰** __ |
-| **② 재배포** (코드 1줄 수정) | **방법** APP_VERSION 변경 → apply(zip 업로드·LT 새 버전) → instance refresh<br>**명령** `aws autoscaling start-instance-refresh --auto-scaling-group-name user17-hermes-content-asg --preferences MinHealthyPercentage=100,MaxHealthyPercentage=200` → `wait_http.sh … <새 version>`<br>**소요** __ 초 · **무중단** __ (비200 __회)<br>**관찰** __ | **방법** 새 이미지 태그 → 롤링 업데이트<br>**명령** `kubectl -n hermes set image deploy/chat-api chat-api=$ECR:<sha>` → `kubectl -n hermes rollout status deploy/chat-api`<br>**소요** __ 초 · **무중단** __ (비200 __회)<br>**관찰** __ | **방법** 함수 코드 교체<br>**명령** `aws lambda update-function-code --function-name user17-hermes-note-fn --zip-file fileb://note.zip && aws lambda wait function-updated --function-name user17-hermes-note-fn`<br>**소요** __ 초 · **무중단** __ (비200 __회)<br>**관찰** __ |
-| **③ 강제 종료 복구** (C9) | **방법** 인스턴스 terminate → ASG 재생성<br>**명령** `aws ec2 terminate-instances --instance-ids <id>` → ALB 200까지(`wait_http.sh`)<br>**소요** __ 초 · **무중단** 아니오 예상(단일 인스턴스, 다운타임 기록: __ 초)<br>**관찰** 전·후 캡처: 인스턴스 ID/hostname 변경 __ | **방법** Pod 삭제 → ReplicaSet 복원<br>**명령** `kubectl -n hermes delete pod <pod>` → `kubectl -n hermes get pods -w`<br>**소요** 새 Pod Ready까지 __ 초 · **무중단** __ (다른 replica 응답 유지)<br>**관찰** 전·후 캡처: Pod 이름 변경 __ | **방법** 실행 환경 강제 종료 후 재요청<br>**명령** `curl -XPOST "$NOTE/notes?crash=1"` (502) → 즉시 `POST /notes` 201<br>**소요** 다음 요청 성공까지 __ 초 · **무중단** 1회 실패 예상<br>**관찰** CloudWatch 로그 INIT(콜드스타트)로 새 환경 증명 __ |
-| **④ 용량 2배** | **방법** desired 1 → 2<br>**명령** `aws autoscaling set-desired-capacity --auto-scaling-group-name user17-hermes-content-asg --desired-capacity 2`<br>**소요** TG healthy 2개까지 __ 초 · **무중단** __<br>**관찰** __ | **방법** replica 2 → 4 (HPA minReplicas)<br>**명령** `kubectl -n hermes patch hpa chat-api -p '{"spec":{"minReplicas":4}}'` (HPA 없으면 `kubectl scale --replicas=4`)<br>**소요** Ready 4까지 __ 초 · **무중단** __<br>**관찰** __ | **방법** reserved concurrency 2 → 4<br>**명령** `aws lambda put-function-concurrency --function-name user17-hermes-note-fn --reserved-concurrent-executions 4`<br>**소요** 즉시(__ 초) · **무중단** 해당 없음<br>**관찰** __ |
+| **① 최초 배포** | **168.3**<br>terraform apply → 외부 ALB 200<br>User Data 부팅·설치 포함 | **137.8**<br>render-k8s.sh \| kubectl apply → 롤아웃 → Ingress 200<br>공통 기반(VPC·RDS·EKS 클러스터) 생성은 별도 **911.4** | **160.7**<br>terraform apply → 첫 201<br>대부분 VPC ENI 생성 시간 |
+| **② 재배포** (코드 1줄 수정) | **110.5** · 비200 **0/108** (무중단)<br>APP_VERSION 변경 → Launch Template 새 버전 → Instance Refresh(MinHealthy 100%, MaxHealthy 200%)<br>새 인스턴스를 먼저 띄운 뒤 교체 | **27.4** · 비200 **2/29**<br>새 이미지 태그(커밋 SHA) → `kubectl set image` → 롤링 업데이트<br>종료 중인 Pod로 남은 요청이 실패 | **20.2** · 비200 **0/22** (무중단)<br>terraform apply → 함수 코드 갱신<br>코드만 교체, 다음 호출부터 새 버전 |
+| **③ 강제 종료 후 복구** (C9) | **178.1**<br>EC2 terminate → ASG 재생성 → 외부 ALB 200<br>1대 구성에서 측정, 복구 완료까지 응답 불가 | **7.7** · 비200 **1/14**<br>Pod 삭제 → ReplicaSet 재생성 → Ready 2 회복<br>다른 replica가 요청을 계속 처리 | **0.7**<br>`POST /notes?crash=1`로 실행 환경 강제 종료(오류 응답) → 다음 요청 201<br>새 실행 환경은 로그의 INIT(콜드스타트)로 확인 |
+| **④ 용량 2배** | **89.6**<br>desired 1 → 2 → 대상 그룹 healthy 2<br>대부분 새 인스턴스 부팅 시간 | **16.8**<br>HPA minReplicas 2 → 4 → Ready 4<br>기존 노드 여유 안에서 확장 | **1.7**<br>예약 동시성 2 → 4<br>설정값 변경만으로 즉시 반영 |
 
-> 표의 수치는 CSV의 대표값을 옮긴 것이며, 캡처에는 주소창 또는 실행 명령이 함께 보여야 한다(계정 ID·ARN 마스킹).
+> 계정 ID·ARN은 표와 캡처에서 제외했다(E17은 대상 그룹 ARN 열을 걸러낸 출력).
 
-## 세 환경 비교 (5줄) — 발표 12장
-1. 배포 속도: __
-2. 재배포 중 가용성(무중단 여부): __
-3. 장애 복구 방식과 시간: __
-4. 용량 증설의 속도와 단위: __
-5. 운영 부담·비용 구조(유휴 비용 포함): __
+## 세 환경 비교 (5줄) — 발표 13장
+1. **복구는 단위가 작을수록 빠름** : 호출 단위(서버리스 0.7s) < Pod 단위(7.7s) ≪ 인스턴스 단위(VM 178s). VM 복구 시간은 대부분 부팅과 User Data로 인해 발생
+2. **재배포는 컨테이너·서버리스가 4~5배 빠르나, 무중단은 VM이 가장 깔끔함** : VM은 새 인스턴스를 먼저 띄운 뒤 교체해 실패 0건, 컨테이너는 종료 중인 Pod로 요청이 남아 실패 2건 (preStop·등록 해제 지연으로 개선 가능)
+3. **증설은 설정값 변경만으로 되는 쪽이 즉시 반영** : 서버리스 1.7s < 컨테이너 16.8s(노드 여유 내) < VM 89.6s(새 서버). 노드 여유가 없으면 컨테이너도 VM 수준으로 느려질 수 있음
+4. **최초 배포는 셋 다 2~3분대로 비슷하나, 컨테이너는 클러스터 선행 비용이 존재** : EKS 생성 약 15분과 컨트롤플레인 상시 요금
+5. **ADR-1의 배치가 실측으로 뒷받침됨** : 자주 바뀌는 챗봇은 컨테이너, 간헐적인 저장은 서버리스가 운영 속도 면에서 유리했고, VM은 느리지만 정합성 데이터를 가진 기능을 단순하게 운영하기에 적합
+
+## 다시 측정한다면
+- 컨테이너: Pod `preStop` 대기 + ALB 대상 등록 해제 지연을 맞춰 롤링·복구 중 비200 0건 확인
+- VM: 최소 2대 구성에서 복구를 다시 측정해 무중단 여부 비교
+- 같은 칸을 3회 반복해 중앙값으로 기록

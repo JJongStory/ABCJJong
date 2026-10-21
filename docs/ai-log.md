@@ -5,7 +5,8 @@
 ## ① 설계 단계 — 아키텍처 대안 비교 (≥2안)
 | # | 일시 | 모델 | 질문 요지 | 대안 A | 대안 B | (대안 C) | 채택 | 기각 사유 |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 10/12 | Opus | 영어 회화 서비스를 3개 실행 환경에 어떻게 나눌까 | 단일 EKS + RDS HA (초기안) | 기능 분해 A=VM/B=EKS/C=Lambda | - | B | A는 C2·C3 위반(컴퓨팅 1종), RFP 1순위 목적 미충족 |
+| 1 | 10/12 | Opus | 영어 회화 서비스를 실행 환경에 어떻게 배치할까 (장점·단점·2.5일 구축 가능 여부로 비교) | EKS 하나 + RDS 이중화 (초기안) | 기능 분해 VM(콘텐츠) + EKS(챗봇) + Lambda(기록) | VM + ECS Fargate + Lambda | B | A: 상태·변경 주기·트래픽이 다른 기능을 한 방식으로 운영하게 됨. C: 운영은 가장 가벼우나 AWS 전용이라 이식성·표준 생태계(Helm, HPA, 매니페스트) 측면에서 B를 우선 |
+| 2 | 10/12 | Opus | 챗봇 LLM 모델 선택 | Claude 3.5 Haiku | Claude Haiku 4.5 | - | B | 서울 리전 Global 추론 프로파일 목록에 3.5 Haiku가 없음 |
 
 ## ② 검토 단계 — 완성 설계를 AI에 검토시킨 지적사항과 대응
 | # | 일시 | 지적사항 | 대응 (수용/기각) | 사유 |
@@ -20,7 +21,7 @@
 | 8 | 10/20 | (T6) runbook 의 `render-k8s.sh \| kubectl apply` 에 필수 env(IMAGE·IRSA ARN·CONTENT_API_URL) 누락 → 실패 | 수용 | runbook 에 export 5줄(내부 ALB DNS 앞 `http://` 포함) |
 | 9 | 10/20 | (T6) `bootstrap.sh` 를 source 하면 `set -u` 가 대화형 셸에 남음 | 수용 | 옵션 제거 |
 | 10 | 10/20 | (T6) constraints-check C8 이 "80/443 예외"로 계약서(80만)와 불일치 | 수용 | 80 으로 정정 (00_BRIEF 4장 문구는 기획 단계에서 정정 필요) |
-| 11 | 10/20 | (T6) ASG health grace 120s 가 User Data(dnf+pip) 완료보다 짧을 수 있음 → 교체 루프 위험 | **보류(질문)** | 계약값(120s). Day 1 실측 후 계약 변경 여부 결정 |
+| 11 | 10/20 | (T6) ASG health grace 120s 가 User Data(dnf+pip) 완료보다 짧을 수 있음 → 교체 루프 위험 | 수용 | Day 1 실측(부팅~200 약 2분 이상) 후 계약 변경, grace 300s |
 | 12 | 10/20 | (T6) EKS 노드 SG 별도 생성 시 Pod 소스가 cluster SG 가 아니게 되어 C4 실패 가능 | 기각 | 노드그룹이 launch template 없이 cluster SG 를 그대로 사용(`modules/chat/eks.tf`) — 문제 없음 |
 | 13 | 10/20 | (T6) Global 추론 프로파일은 다른 리전 foundation-model ARN 권한도 필요 | 기각 | 이미 `bedrock:*::foundation-model/...` 로 작성됨(`modules/chat/iam.tf`) |
 | 14 | 10/20 | (T6) ALBC 정책·ECR GetAuthorizationToken 의 `Resource "*"` | 기각(예외 인정) | API 가 리소스 수준 권한 미지원 / upstream 공식 정책. 사유 주석 존재 |
@@ -43,18 +44,23 @@
 | 11 | 10/20 | `infra/terraform/main.tf` | Sonnet 5.5 (세션 B) | 모듈의 `github_oidc_provider_arn` 를 루트에서 못 넘김 | 기존 provider 있는 계정에서 EntityAlreadyExists | 루트 변수·tfvars 항목 추가 | Opus 5.5 T6 리뷰 |
 | 12 | 10/20 | `docs/project/03_CLOUDSHELL_RUNBOOK.md` | Opus 5.5 (T0) | render-k8s 필수 env 누락, CONTENT_API_URL 연결 방법 미기재 | Day 2 컨테이너 배포 실패 / C4 미연결 | export 5줄 추가 | Opus 5.5 T6 리뷰 |
 | 13 | 10/20 | `scripts/bootstrap.sh` | Opus 5.5 (T0) | source 스크립트에 `set -u` | CloudShell 대화형 셸 오동작 | 제거 | Opus 5.5 T6 리뷰 |
+| 14 | 10/20 | `apps/chat-api/llm.py` | Opus 5.5 | 시스템 프롬프트에 발음 표기 규칙이 없어 LLM이 발음 칸에 한국어 원문을 그대로 넣음 | 학습자 화면의 핵심 기능(한글 발음) 미동작 | 규칙과 예시를 프롬프트에 추가, `maxTokens` 600 | 사용자(본인) — 배포 후 화면 테스트에서 발견, E23에서 수정 확인 |
 
 > 세션 A·B·C의 최종 보고 원문은 T6에 전달되지 않아, 1~7은 커밋된 코드 주석·`SECURITY_SCAN.md`를 근거로 기록했다. 보고 원문을 받으면 보완한다.
 
 ## ④ 프롬프트 Before / After (≥1건)
 ### Before
 ```
-(의도한 결과가 안 나온 프롬프트)
+세션 A~C: 작업 후 dev/apps, dev/infra, dev/ops 브랜치를 만들어 push하라.
+세션 D: dev/* 브랜치를 merge해 통합하라.
 ```
-결과 문제:
+결과 문제: 클라우드 Claude Code 세션은 세션마다 지정된 `claude/*` 브랜치에만 push할 수 있어 dev/* 브랜치가 생성되지 않았고, 통합 세션(D)이 "브랜치 없음"으로 작업을 진행하지 못함. 또 PR #2는 PR #1 머지 전 main을 기준으로 실행되어 닫고 다시 수행.
 
 ### After
 ```
-(개선 프롬프트)
+세션에 지정된 브랜치를 그대로 쓰고 다른 브랜치를 만들지 마라.
+push 후 `git ls-remote origin <브랜치>`로 원격 반영을 확인하라.
+보고 첫 줄에 브랜치 이름과 마지막 커밋 SHA를 적어라.
+(통합 세션) 선행 PR이 main에 머지된 것을 확인한 뒤 시작하라.
 ```
-개선 포인트:
+개선 포인트: 실행 환경의 제약(push 가능 브랜치)을 명시하고, 스스로 결과를 검증하게 하며, 다음 단계로 넘길 정보(브랜치·SHA)를 고정. 선후 관계(머지 완료)를 시작 조건으로 둠.
