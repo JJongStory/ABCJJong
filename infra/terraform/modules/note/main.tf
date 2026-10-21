@@ -139,6 +139,19 @@ resource "aws_apigatewayv2_route" "get_notes" {
   target    = "integrations/${aws_apigatewayv2_integration.fn.id}"
 }
 
+# 학습자 대화 저장/조회 (닉네임 = user_id). 같은 함수·같은 테이블(SK 접두사 conv#)
+resource "aws_apigatewayv2_route" "post_conversations" {
+  api_id    = aws_apigatewayv2_api.this.id
+  route_key = "POST /conversations"
+  target    = "integrations/${aws_apigatewayv2_integration.fn.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_conversations" {
+  api_id    = aws_apigatewayv2_api.this.id
+  route_key = "GET /conversations/{user_id}"
+  target    = "integrations/${aws_apigatewayv2_integration.fn.id}"
+}
+
 resource "aws_cloudwatch_log_group" "api" {
   name              = "/aws/apigateway/${var.names.api}"
   retention_in_days = 7

@@ -3,10 +3,13 @@ import logging
 import os
 import socket
 import time
+from urllib.parse import quote
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from pathlib import Path
+
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 import llm
@@ -14,6 +17,7 @@ import llm
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("chat-api")
 
+UI_FILE = Path(__file__).parent / "static" / "index.html"
 HISTORY_MAX = 6          # 계약: 슬라이딩 윈도우 6개 (무상태 → Pod 수평 확장 가능)
 UPSTREAM_TIMEOUT = 3.0   # content-api 호출 timeout (계약: 3s)
 NOTE_TIMEOUT = 5.0
@@ -82,6 +86,13 @@ def root():
     }
 
 
+@app.get("/ui", include_in_schema=False)
+def ui():
+    # 학습자용 단일 페이지(정적 HTML). 같은 오리진에서 /scenario·/chat·/note 를 호출하므로 CORS 불필요.
+    # 한 화면에서 VM(시나리오)·Container(대화)·Serverless(오답노트) 세 워크로드가 함께 동작하는 것을 보여준다.
+    return FileResponse(UI_FILE, media_type="text/html")
+
+
 def _bad_gateway(cause: str):
     log.warning("upstream failure: %s", cause)
     return JSONResponse({"error": "upstream_unavailable", "upstream": "content-api", "cause": cause},
@@ -132,6 +143,40 @@ def chat(req: ChatRequest):
     topic_hint = _scenario_topic(req.scenario_id)
     result, label = llm.chat_with_fallback(provider_setting(), req.message, history, topic_hint)
     return {**result, "llm_provider": label}
+
+
+async def _note_api(method: str, path: str, payload=None):
+    """note API(Serverless)로의 얇은 프록시. 브라우저는 같은 오리진(chat-api)만 호출 → CORS 불필요."""
+    base = os.environ.get("NOTE_API_URL", "").rstrip("/")
+    if not base:
+        return JSONResponse({"error": "note_api_not_configured"}, status_code=503)
+    try:
+        async with httpx.AsyncClient(timeout=NOTE_TIMEOUT) as c:
+            r = await c.request(method, f"{base}{path}", json=payload)
+        return JSONResponse(r.json(), status_code=r.status_code)
+    except (httpx.HTTPError, ValueError) as e:
+        log.warning("note proxy failure: %s", type(e).__name__)
+        return JSONResponse({"error": "note_upstream_unavailable", "cause": type(e).__name__},
+                            status_code=502)
+
+
+@app.get("/notes/{user_id}")
+async def list_notes(user_id: str):
+    return await _note_api("GET", f"/notes/{quote(user_id, safe='')}")
+
+
+@app.post("/conversations")
+async def save_conversation(request: Request):
+    try:
+        payload = await request.json()
+    except ValueError:
+        return JSONResponse({"error": "invalid_json"}, status_code=400)
+    return await _note_api("POST", "/conversations", payload)
+
+
+@app.get("/conversations/{user_id}")
+async def list_conversations(user_id: str):
+    return await _note_api("GET", f"/conversations/{quote(user_id, safe='')}")
 
 
 @app.post("/note")

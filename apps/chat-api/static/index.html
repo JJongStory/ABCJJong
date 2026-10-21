@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HERMES 영어 회화</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #1d2433; --muted: #6b7385; --line: #e3e6ec;
+    --accent: #2f6fde; --accent-soft: #e8f0fd; --vm: #b4541a; --vm-soft: #fbeee5;
+    --ctr: #2f6fde; --ctr-soft: #e8f0fd; --fn: #2c8a57; --fn-soft: #e5f4ec; --err: #c0392b;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.55 -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+  button { font: inherit; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 20px;
+           background: var(--panel); border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 17px; margin: 0 8px 0 0; letter-spacing: -0.01em; }
+  .chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--bg);
+          color: var(--muted); border: 1px solid var(--line); white-space: nowrap; }
+  .chip b { color: var(--ink); font-weight: 600; }
+  .me { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .me b { font-weight: 700; }
+  .me[hidden] { display: none; }
+  .link { border: 0; background: none; color: var(--muted); cursor: pointer; text-decoration: underline; padding: 0; font-size: 12.5px; }
+  main { display: grid; grid-template-columns: 270px 1fr 300px; gap: 16px; padding: 16px 20px;
+         height: calc(100vh - 58px); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+            display: flex; flex-direction: column; min-height: 0; }
+  section > h2, .sec-h { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0;
+                 padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  .sec-h .grow { flex: 1; }
+  .scroll { overflow-y: auto; padding: 12px 14px; flex: 1; min-height: 0; }
+  .src { font-size: 11.5px; color: var(--muted); padding: 8px 14px; border-top: 1px solid var(--line); }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 6px; }
+  .tag.vm { background: var(--vm-soft); color: var(--vm); }
+  .tag.ctr { background: var(--ctr-soft); color: var(--ctr); }
+  .tag.fn { background: var(--fn-soft); color: var(--fn); }
+  .tabs { display: flex; border-bottom: 1px solid var(--line); }
+  .tabs button { flex: 1; border: 0; background: none; padding: 11px 4px; font-size: 13px; font-weight: 600;
+                 color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+  .tabs button.on { color: var(--ink); border-bottom-color: var(--accent); }
+  .pane { display: none; } .pane.on { display: block; }
+  .item { width: 100%; text-align: left; border: 1px solid var(--line); background: var(--panel);
+          border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; cursor: pointer; color: inherit; }
+  .item:hover { border-color: var(--accent); }
+  .item.on { border-color: var(--accent); background: var(--accent-soft); }
+  .item .t { font-weight: 600; }
+  .item .t.cap { text-transform: capitalize; }
+  .item .l, .l { font-size: 12px; color: var(--muted); }
+  .note-row { border-bottom: 1px dashed var(--line); padding: 8px 0; font-size: 13px; }
+  .note-row:last-child { border-bottom: 0; }
+  .note-row .w { color: var(--muted); }
+  .note-row .c { font-weight: 600; }
+  #chat .scroll { display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 78%; padding: 10px 13px; border-radius: 14px; }
+  .msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+  .msg.bot { align-self: flex-start; background: var(--bg); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .msg .en { font-size: 16px; font-weight: 600; }
+  .msg .pron { font-size: 13px; opacity: .85; }
+  .msg .ko { font-size: 13.5px; margin-top: 4px; color: var(--muted); }
+  .msg.user .sub { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.3); font-size: 13px; }
+  .msg .act { margin-top: 6px; }
+  .msg .act button { font-size: 12px; border: 0; border-radius: 6px; padding: 3px 8px; cursor: pointer;
+                     background: rgba(255,255,255,.22); color: inherit; }
+  .msg .act button:disabled { opacity: .6; cursor: default; }
+  .hint { color: var(--muted); font-size: 13px; text-align: center; margin: auto; padding: 20px; }
+  .btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 4px 10px;
+         font-size: 12.5px; font-weight: 600; cursor: pointer; color: var(--ink); }
+  .btn.primary { background: var(--fn); color: #fff; border-color: var(--fn); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  form.ask { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+  input[type=text] { flex: 1; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+  input[type=text]:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .send { font-weight: 600; padding: 0 18px; border: 0; border-radius: 10px; white-space: nowrap;
+          background: var(--accent); color: #fff; cursor: pointer; }
+  .send:disabled { opacity: .5; cursor: default; }
+  .trace { font-size: 12.5px; border-bottom: 1px dashed var(--line); padding: 8px 0; }
+  .trace:last-child { border-bottom: 0; }
+  .trace .p { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+  .trace .who { color: var(--muted); word-break: break-all; }
+  .trace .ms { float: right; color: var(--muted); }
+  .trace.err .p { color: var(--err); }
+  .err { color: var(--err); font-size: 13px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff;
+           padding: 9px 16px; border-radius: 10px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.on { opacity: .92; }
+  .login { position: fixed; inset: 0; background: rgba(29,36,51,.45); display: none; align-items: center; justify-content: center; padding: 16px; }
+  .login.on { display: flex; }
+  .login .box { background: var(--panel); border-radius: 14px; padding: 24px; width: 100%; max-width: 380px; }
+  .login h3 { margin: 0 0 4px; font-size: 18px; }
+  .login p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+  .login form { display: flex; gap: 8px; }
+  @media (max-width: 980px) {
+    main { grid-template-columns: 1fr; height: auto; }
+    #chat { height: 72vh; }
+    #side .scroll { max-height: 300px; }
+    #trace { max-height: 320px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>HERMES 영어 회화</h1>
+  <span class="chip">Pod <b id="pod">…</b></span>
+  <span class="chip">version <b id="ver">…</b></span>
+  <span class="chip">LLM <b id="llm">…</b></span>
+  <span class="me" id="me" hidden>학습자 <b id="nick"></b> <button class="link" id="logout">닉네임 변경</button></span>
+</header>
+<main>
+  <section id="side">
+    <div class="tabs">
+      <button data-tab="scn" class="on">시나리오</button>
+      <button data-tab="conv">대화 기록</button>
+      <button data-tab="notes">오답노트</button>
+    </div>
+    <div class="scroll">
+      <div class="pane on" id="pane-scn"><div class="hint">불러오는 중…</div></div>
+      <div class="pane" id="pane-conv"></div>
+      <div class="pane" id="pane-notes"></div>
+    </div>
+    <div class="src"><span class="tag vm" id="srcTag">VM</span> <span id="srcText">콘텐츠 API · -</span></div>
+  </section>
+
+  <section id="chat">
+    <div class="sec-h"><span class="grow">대화 <span id="scnLabel"></span></span>
+      <button class="btn" id="newChat">새 대화</button>
+      <button class="btn primary" id="saveChat" disabled>대화 저장</button>
+    </div>
+    <div class="scroll" id="log"><div class="hint">왼쪽에서 시나리오를 고르거나 바로 한국어로 말해 보세요.</div></div>
+    <form class="ask" id="f" autocomplete="off">
+      <input type="text" id="q" placeholder="한국어로 입력 (예: 커피 한 잔 주세요)" maxlength="500" required>
+      <button class="send" id="send">보내기</button>
+    </form>
+  </section>
+
+  <section id="trace">
+    <h2>요청 경로 (어느 실행 환경이 처리했나)</h2>
+    <div class="scroll" id="traceLog"></div>
+  </section>
+</main>
+
+<div class="login" id="login">
+  <div class="box">
+    <h3>닉네임으로 시작하기</h3>
+    <p>대화 기록과 오답노트를 닉네임별로 저장합니다. 비밀번호가 없는 학습자 구분용이니 개인정보는 넣지 마세요.</p>
+    <form id="loginForm" autocomplete="off">
+      <input type="text" id="nickIn" placeholder="2~20자: 한글·영문·숫자·_·-" maxlength="20" required>
+      <button class="send">시작</button>
+    </form>
+    <div class="err" id="nickErr"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const HISTORY_MAX = 6;                       // 서버와 동일한 슬라이딩 윈도우
+  const NICK_RE = /^[0-9A-Za-z가-힣_-]{2,20}$/;  // note Lambda 검증과 동일
+  let nick = null;
+  let history = [];      // LLM 문맥용 (role/content)
+  let turns = [];        // 저장용 전체 대화 (role, ko, en, pron)
+  let scenario = null;   // {id, topic}
+  let dirty = false;
+  let vmHost = "-";
+
+  const store = {        // localStorage가 막힌 환경에서도 동작
+    get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} },
+  };
+
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) e.textContent = text;   // 항상 textContent (HTML 해석 안 함)
+    return e;
+  }
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.classList.add("on");
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("on"), 2400);
+  }
+  function fmtTime(iso) {
+    const d = new Date(String(iso).replace(/^conv#/, ""));
+    return isNaN(d) ? "" : d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+
+  function trace(method, path, kind, who, ms, ok) {
+    const row = el("div", "trace" + (ok ? "" : " err"));
+    const top = el("div");
+    top.append(el("span", "tag " + kind, { vm: "VM", ctr: "Container", fn: "Serverless" }[kind]));
+    top.append(" ", el("span", "p", method + " " + path));
+    top.append(el("span", "ms", ms + "ms"));
+    row.append(top, el("div", "who", who));
+    $("traceLog").prepend(row);
+  }
+
+  async function call(method, path, body) {
+    const t0 = performance.now();
+    let res, data = {};
+    try {
+      res = await fetch(path, { method, headers: body ? { "content-type": "application/json" } : undefined,
+                                body: body ? JSON.stringify(body) : undefined });
+      try { data = await res.json(); } catch (_) {}
+    } catch (e) {
+      return { ok: false, status: 0, data: { error: "network" }, ms: Math.round(performance.now() - t0) };
+    }
+    return { ok: res.ok, status: res.status, data: data || {}, ms: Math.round(performance.now() - t0) };
+  }
+  const enc = (s) => encodeURIComponent(s);
+
+  /* ---------- 상태 / 닉네임 ---------- */
+  async function loadStatus() {
+    const r = await call("GET", "/");
+    $("pod").textContent = r.data.pod || "?";
+    $("ver").textContent = r.data.version || "?";
+    $("llm").textContent = r.data.llm_provider || "?";
+    trace("GET", "/", "ctr", "pod " + (r.data.pod || "?"), r.ms, r.ok);
+  }
+  function setNick(n) {
+    nick = n; store.set("hermes.nick", n);
+    $("nick").textContent = n; $("me").hidden = false; $("login").classList.remove("on");
+    loadConversations(); loadNotes();
+  }
+  function askNick() { $("nickIn").value = nick || ""; $("nickErr").textContent = ""; $("login").classList.add("on"); $("nickIn").focus(); }
+  $("loginForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const n = $("nickIn").value.trim();
+    if (!NICK_RE.test(n)) { $("nickErr").textContent = "2~20자의 한글·영문·숫자·_·- 만 쓸 수 있어요."; return; }
+    setNick(n);
+  });
+  $("logout").onclick = askNick;
+
+  /* ---------- 탭 ---------- */
+  function setSource(tab) {
+    const vm = tab === "scn";
+    $("srcTag").className = "tag " + (vm ? "vm" : "fn");
+    $("srcTag").textContent = vm ? "VM" : "Serverless";
+    $("srcText").textContent = vm ? "콘텐츠 API · " + vmHost : "API Gateway → Lambda → DynamoDB";
+  }
+  document.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => {
+    document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
+    document.querySelectorAll(".pane").forEach((p) => p.classList.toggle("on", p.id === "pane-" + b.dataset.tab));
+    setSource(b.dataset.tab);
+    if (b.dataset.tab === "conv") loadConversations();
+    if (b.dataset.tab === "notes") loadNotes();
+  });
+
+  /* ---------- 시나리오 (VM) ---------- */
+  async function loadScenarios() {
+    const r = await call("GET", "/scenario");
+    const box = $("pane-scn"); box.textContent = "";
+    if (!r.ok) {
+      box.append(el("div", "err", "시나리오를 불러오지 못했습니다 (" + (r.data.cause || r.status) + ")"));
+      trace("GET", "/scenario", "vm", r.data.cause || "error", r.ms, false);
+      return;
+    }
+    vmHost = r.data.upstream_hostname || "-"; setSource("scn");
+    trace("GET", "/scenario", "vm", "pod " + r.data.pod + " → 내부 ALB → " + r.data.upstream_hostname, r.ms, true);
+    for (const s of r.data.data || []) {
+      const b = el("button", "item");
+      b.append(el("div", "t cap", s.topic), el("div", "l", s.level + " · " + s.opener_ko));
+      b.onclick = () => startScenario(s, b);
+      box.append(b);
+    }
+  }
+
+  /* ---------- 대화 렌더링 ---------- */
+  function clearLog(hint) {
+    const log = $("log"); log.textContent = "";
+    if (hint) log.append(el("div", "hint", hint));
+  }
+  function renderTurn(t, memo) {
+    const log = $("log");
+    if (log.querySelector(".hint")) log.textContent = "";
+    if (t.role === "user") {
+      const u = el("div", "msg user");
+      u.append(el("div", null, t.ko || t.en));
+      if (t.en) {
+        const sub = el("div", "sub");
+        sub.append(el("div", null, t.en));
+        if (t.pron) sub.append(el("div", "pron", t.pron));
+        u.append(sub);
+      }
+      if (memo !== undefined) {
+        const act = el("div", "act"); const nb = el("button", null, "오답노트 저장");
+        nb.onclick = () => saveNoteFor(nb, t.ko, t.en, memo);
+        act.append(nb); u.append(act);
+      }
+      log.append(u);
+    } else {
+      const b = el("div", "msg bot");
+      if (t.en) b.append(el("div", "en", t.en));
+      if (t.pron) b.append(el("div", "pron", t.pron));
+      if (t.ko) b.append(el("div", "ko", t.ko));
+      log.append(b);
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+  function setDirty(v) { dirty = v; $("saveChat").disabled = !(v && turns.some((t) => t.role === "user")); }
+
+  function resetChat(hint) {
+    history = []; turns = []; scenario = null; $("scnLabel").textContent = "";
+    document.querySelectorAll(".item").forEach((x) => x.classList.remove("on"));
+    clearLog(hint); setDirty(false);
+  }
+  function startScenario(s, btn) {
+    resetChat();
+    btn.classList.add("on");
+    scenario = { id: s.id, topic: s.topic };
+    $("scnLabel").textContent = "· " + s.topic;
+    const t = { role: "assistant", en: s.opener_en, ko: s.opener_ko };
+    turns.push(t); history.push({ role: "assistant", content: s.opener_en });
+    renderTurn(t); $("q").focus();
+  }
+  $("newChat").onclick = () => resetChat("새 대화를 시작합니다. 시나리오를 고르거나 바로 말해 보세요.");
+
+  /* ---------- 대화 (Container + Bedrock) ---------- */
+  async function send(ev) {
+    ev.preventDefault();
+    const q = $("q"), message = q.value.trim();
+    if (!message) return;
+    q.value = ""; $("send").disabled = true;
+    const log = $("log");
+    if (log.querySelector(".hint")) log.textContent = "";
+    const pending = el("div", "msg user", message); log.append(pending);
+    const wait = el("div", "msg bot", "…"); log.append(wait);
+    log.scrollTop = log.scrollHeight;
+
+    const r = await call("POST", "/chat", { message, history: history.slice(-HISTORY_MAX), scenario_id: scenario ? scenario.id : null });
+    pending.remove(); wait.remove();
+    if (!r.ok) {
+      log.append(el("div", "msg bot err", "응답 실패 (HTTP " + r.status + ")"));
+      trace("POST", "/chat", "ctr", "error", r.ms, false);
+    } else {
+      const d = r.data;
+      const ut = { role: "user", ko: message, en: d.input_en, pron: d.input_pron };
+      const bt = { role: "assistant", en: d.reply_en, pron: d.reply_pron, ko: d.reply_ko };
+      turns.push(ut, bt);
+      renderTurn(ut, d.reply_en); renderTurn(bt);
+      history.push({ role: "user", content: message }, { role: "assistant", content: d.reply_en });
+      history = history.slice(-HISTORY_MAX);
+      $("llm").textContent = d.llm_provider;
+      trace("POST", "/chat", "ctr", "LLM " + d.llm_provider + " · topic " + d.topic, r.ms, true);
+      setDirty(true);
+    }
+    $("send").disabled = false; q.focus();
+  }
+  $("f").addEventListener("submit", send);
+
+  /* ---------- 저장 (Serverless) ---------- */
+  async function saveNoteFor(btn, wrong, correct, memo) {
+    if (!nick) return askNick();
+    btn.disabled = true; btn.textContent = "저장 중…";
+    const r = await call("POST", "/note", { user_id: nick, wrong, correct, memo });
+    if (r.ok) {
+      btn.textContent = "오답노트에 저장됨 ✓";
+      trace("POST", "/note", "fn", "pod → API Gateway → Lambda " + (r.data.function || "?") + " → DynamoDB", r.ms, true);
+    } else {
+      btn.disabled = false; btn.textContent = "저장 실패 · 다시 시도";
+      trace("POST", "/note", "fn", r.data.error || ("HTTP " + r.status), r.ms, false);
+    }
+  }
+
+  $("saveChat").onclick = async () => {
+    if (!nick) return askNick();
+    const b = $("saveChat"); b.disabled = true; b.textContent = "저장 중…";
+    const r = await call("POST", "/conversations", { user_id: nick, topic: scenario ? scenario.topic : "", turns: turns.slice(-40) });
+    b.textContent = "대화 저장";
+    if (r.ok) {
+      setDirty(false); toast("대화를 저장했어요 (" + r.data.saved.turn_count + "턴)");
+      trace("POST", "/conversations", "fn", "pod → API Gateway → Lambda " + (r.data.function || "?") + " → DynamoDB", r.ms, true);
+      loadConversations();
+    } else {
+      b.disabled = false; toast("저장 실패: " + (r.data.error || r.status));
+      trace("POST", "/conversations", "fn", r.data.error || ("HTTP " + r.status), r.ms, false);
+    }
+  };
+
+  async function loadConversations() {
+    const box = $("pane-conv");
+    if (!nick) { box.textContent = ""; box.append(el("div", "hint", "닉네임을 정하면 대화 기록이 보여요.")); return; }
+    const r = await call("GET", "/conversations/" + enc(nick));
+    box.textContent = "";
+    if (!r.ok) { box.append(el("div", "err", "대화 기록을 불러오지 못했습니다 (" + (r.data.error || r.status) + ")")); return; }
+    trace("GET", "/conversations/{닉네임}", "fn", "Lambda → DynamoDB · " + r.data.count + "건", r.ms, true);
+    if (!r.data.items.length) { box.append(el("div", "hint", "저장된 대화가 없어요. 대화 후 '대화 저장'을 눌러 보세요.")); return; }
+    for (const c of r.data.items) {
+      const b = el("button", "item");
+      b.append(el("div", "t", c.title || "(제목 없음)"),
+               el("div", "l", [c.topic, c.turn_count + "턴", fmtTime(c.created_at)].filter(Boolean).join(" · ")));
+      b.onclick = () => openConversation(c, b);
+      box.append(b);
+    }
+  }
+  function openConversation(c, btn) {
+    resetChat();
+    btn.classList.add("on");
+    scenario = c.topic ? { id: null, topic: c.topic } : null;
+    $("scnLabel").textContent = "· 저장된 대화" + (c.topic ? " (" + c.topic + ")" : "");
+    turns = (c.turns || []).slice();
+    for (const t of turns) renderTurn(t);
+    history = turns.map((t) => ({ role: t.role, content: t.role === "user" ? (t.ko || t.en) : t.en }))
+                   .filter((h) => h.content).slice(-HISTORY_MAX);
+    setDirty(false);
+    toast("저장된 대화를 불러왔어요. 이어서 말하고 저장하면 새 기록으로 남아요.");
+  }
+
+  async function loadNotes() {
+    const box = $("pane-notes");
+    if (!nick) { box.textContent = ""; return; }
+    const r = await call("GET", "/notes/" + enc(nick));
+    box.textContent = "";
+    if (!r.ok) { box.append(el("div", "err", "오답노트를 불러오지 못했습니다 (" + (r.data.error || r.status) + ")")); return; }
+    if (!r.data.items.length) { box.append(el("div", "hint", "아직 오답노트가 없어요. 내 문장 아래 '오답노트 저장'을 눌러 보세요.")); return; }
+    for (const n of r.data.items) {
+      const row = el("div", "note-row");
+      row.append(el("div", "w", n.wrong), el("div", "c", n.correct));
+      if (n.memo) row.append(el("div", "l", n.memo));
+      box.append(row);
+    }
+  }
+
+  window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+  loadStatus().catch(() => {});
+  loadScenarios().catch(() => {});
+  const saved = store.get("hermes.nick");
+  if (saved && NICK_RE.test(saved)) setNick(saved); else askNick();
+})();
+</script>
+</body>
+</html>

@@ -124,3 +124,17 @@ def test_scenario_502_upstream_http_error(client, monkeypatch, upstream_url):
 def test_note_not_configured(client, monkeypatch):
     monkeypatch.delenv("NOTE_API_URL", raising=False)
     assert client.post("/note", json={"user_id": "u"}).status_code == 503
+
+
+def test_ui_page_served(client):
+    r = client.get("/ui")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/html")
+    assert "HERMES" in r.text and "/scenario" in r.text and "/note" in r.text
+
+
+def test_conversation_proxy_not_configured(client, monkeypatch):
+    monkeypatch.delenv("NOTE_API_URL", raising=False)
+    assert client.post("/conversations", json={"user_id": "ab"}).status_code == 503
+    assert client.get("/conversations/ab").status_code == 503
+    assert client.get("/notes/ab").status_code == 503
